@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Windows (VS2022, ClangCL, ${{ matrix.config }})
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Release, Debug]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          cmake -S . -B build `
+                -G "Visual Studio 17 2022" -A x64 -T ClangCL `
+                -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.config }} --parallel
+
+      - name: Stage artifacts
+        shell: pwsh
+        run: |
+          $stage = "stage/windows-${{ matrix.config }}"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "build/examples/${{ matrix.config }}/tq_basic.exe" $stage/
+          Copy-Item LICENSE $stage/ -ErrorAction SilentlyContinue
+          Copy-Item README.md $stage/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.config }}
+          path: stage/windows-${{ matrix.config }}
+          if-no-files-found: error
+
+  build-linux:
+    name: Linux (clang, Ninja, ${{ matrix.config }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Release, Debug]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang lld cmake ninja-build
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+                -DCMAKE_C_COMPILER=clang \
+                -DCMAKE_CXX_COMPILER=clang++ \
+                -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Stage artifacts
+        run: |
+          stage="stage/linux-${{ matrix.config }}"
+          mkdir -p "$stage"
+          cp build/examples/tq_basic "$stage/"
+          cp LICENSE README.md "$stage/" 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.config }}
+          path: stage/linux-${{ matrix.config }}
+          if-no-files-found: error
+
+  release:
+    name: Create release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package archives
+        run: |
+          set -eu
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          cd artifacts
+
+          ( cd windows-Release && zip -r "../../teaspeak-query-${version}-windows-x64-Release.zip"   . )
+          ( cd windows-Debug   && zip -r "../../teaspeak-query-${version}-windows-x64-Debug.zip"     . )
+          ( cd linux-Release   && tar -czf "../../teaspeak-query-${version}-linux-x86_64-Release.tar.gz" . )
+          ( cd linux-Debug     && tar -czf "../../teaspeak-query-${version}-linux-x86_64-Debug.tar.gz"   . )
+
+      - name: Generate checksums
+        run: |
+          shopt -s nullglob
+          sha256sum teaspeak-query-*.zip teaspeak-query-*.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            teaspeak-query-*.zip
+            teaspeak-query-*.tar.gz
+            SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
