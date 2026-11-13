@@ -1,0 +1,29 @@
+# build files
+build/
+out/
+bin/
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeUserPresets.json
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+compile_commands.json
+
+# OS files
+Thumbs.db
+.DS_Store
