@@ -1,3 +1,6 @@
+TeamSpeak Query - A modern C++17 client library for the TeaSpeak / TeamSpeak 3 ServerQuery protocol
+Copyright (C) 2026 - Mehdi
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -70,7 +73,7 @@ modification follow.
 
                        TERMS AND CONDITIONS
 
-  0. Definitions.
+  1. Definitions.
 
   "This License" refers to version 3 of the GNU General Public License.
 
