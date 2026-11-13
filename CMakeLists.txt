@@ -52,6 +52,8 @@ else()
     add_library(teaspeak_query STATIC ${TQ_SOURCES})
 endif()
 
+add_library(teaspeak_query::teaspeak_query ALIAS teaspeak_query)
+
 target_include_directories(teaspeak_query
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
