@@ -542,7 +542,20 @@ ServerQuery& ServerQuery::banadd(const std::string& ip,
     execute(cmd).raise_for_error();
     return *this;
 }
-ItemList ServerQuery::banlist() { return execute("banlist").as_list(); }
+ItemList ServerQuery::banlist() {
+    ItemList all;
+    int start = 0;
+    constexpr int page = 100;
+    while (true) {
+        auto rows = execute("banlist start=" + std::to_string(start) +
+                            " duration=" + std::to_string(page)).as_list();
+        if (rows.empty()) break;
+        all.insert(all.end(), rows.begin(), rows.end());
+        if (rows.size() < static_cast<std::size_t>(page)) break;
+        start += page;
+    }
+    return all;
+}
 ServerQuery& ServerQuery::banclient(int clid, int time_seconds,
                                      const std::string& reason) {
     std::string cmd = "banclient clid=" + std::to_string(clid);
