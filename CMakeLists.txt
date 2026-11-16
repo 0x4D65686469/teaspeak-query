@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(teaspeak_query VERSION 1.0.0 LANGUAGES CXX)
 
-option(TQ_BUILD_SHARED    "Build shared library"  OFF)
-option(TQ_BUILD_EXAMPLES  "Build examples"        ON)
-option(TQ_BUILD_TESTS     "Build tests"           OFF)
-option(TQ_USE_SANITIZERS  "Enable sanitizers"     OFF)
+option(TQ_BUILD_SHARED   "Build shared library"  OFF)
+option(TQ_BUILD_EXAMPLES "Build examples"        ON)
+option(TQ_USE_SANITIZERS "Enable sanitizers"     OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,17 +12,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
-endif()
-
-if(MSVC)
-    add_compile_options(/W4 /permissive- /Zc:__cplusplus)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-if(TQ_USE_SANITIZERS AND NOT MSVC)
-    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-    add_link_options(-fsanitize=address,undefined)
 endif()
 
 set(TQ_SOURCES
@@ -35,15 +23,6 @@ set(TQ_SOURCES
     src/client.cpp
 )
 
-set(TQ_PUBLIC_HEADERS
-    include/teaspeak_query/teaspeak_query.hpp
-    include/teaspeak_query/escape.hpp
-    include/teaspeak_query/exceptions.hpp
-    include/teaspeak_query/types.hpp
-    include/teaspeak_query/params.hpp
-    include/teaspeak_query/client.hpp
-)
-
 if(TQ_BUILD_SHARED)
     add_library(teaspeak_query SHARED ${TQ_SOURCES})
     target_compile_definitions(teaspeak_query PRIVATE TQ_BUILDING_DLL)
@@ -53,6 +32,19 @@ else()
 endif()
 
 add_library(teaspeak_query::teaspeak_query ALIAS teaspeak_query)
+
+if(MSVC)
+    target_compile_options(teaspeak_query PRIVATE /W4 /permissive- /Zc:__cplusplus)
+else()
+    target_compile_options(teaspeak_query PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(TQ_USE_SANITIZERS AND NOT MSVC)
+    target_compile_options(teaspeak_query PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(teaspeak_query PRIVATE
+        -fsanitize=address,undefined)
+endif()
 
 target_include_directories(teaspeak_query
     PUBLIC
