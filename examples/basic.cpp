@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <thread>
+
+#include "env.hpp"
 #include <teaspeak_query/teaspeak_query.hpp>
 
 using namespace teaspeak_query;
@@ -99,7 +101,7 @@ int main(int argc, char** argv) {
     if (!parse(argc, argv, args)) return 1;
 
     if (args.apikey.empty() && args.password.empty()) {
-        if (const char* env = std::getenv("TQ_PASS")) args.password = env;
+        if (auto v = ex::get_env("TQ_PASS")) args.password = *v;
     }
     if (args.apikey.empty() && args.password.empty()) {
         std::cerr << "error: no credentials. Use --apikey, --pass, or set TQ_PASS.\n";
