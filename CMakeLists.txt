@@ -42,7 +42,7 @@ endif()
 if(TQ_USE_SANITIZERS AND NOT MSVC)
     target_compile_options(teaspeak_query PRIVATE
         -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(teaspeak_query PRIVATE
+    target_link_options(teaspeak_query PUBLIC
         -fsanitize=address,undefined)
 endif()
 
