@@ -41,6 +41,9 @@ ServerQuery& ServerQuery::connect() {
     }
 
     stop_flag_ = false;
+    login_success_ = false;
+    apikey_success_ = false;
+    client_id_ = -1;
     connected_ = true;
 
     _read_greeting();
@@ -269,7 +272,10 @@ ServerQuery& ServerQuery::login(const std::string& user,
     int id  = resp.error().id;
     auto msg = resp.error().msg;
 
-    if (id == 0) return *this;
+    if (id == 0) {
+        login_success_ = true;
+        return *this;
+    }
 
     // TeaSpeak bug #1792 – session stays alive as guest.
     if (id == 1792) {
@@ -288,7 +294,10 @@ ServerQuery& ServerQuery::login(const std::string& user,
 ServerQuery& ServerQuery::apikey(const std::string& key) {
     auto resp = execute("apikey " + escape(key));
     if (!resp.ok())
-        throw AuthenticationError("API key auth failed: " + resp.error().msg);
+        throw AuthenticationError(
+            "API key auth failed (id=" + std::to_string(resp.error().id) +
+            "): " + resp.error().msg);
+    apikey_success_ = true;
     return *this;
 }
 
@@ -342,6 +351,7 @@ std::optional<KeyValueMap> ServerQuery::_locate_self() {
 }
 
 bool ServerQuery::logged_in() {
+    if (login_success_ || apikey_success_) return true;
     try {
         auto me = whoami();
         auto it = me.find("client_login_name");

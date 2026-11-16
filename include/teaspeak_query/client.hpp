@@ -178,6 +178,8 @@ private:
 
     std::atomic<int> client_id_{-1};
     std::atomic<int> server_id_{0};
+    std::atomic<bool> login_success_{false};
+    std::atomic<bool> apikey_success_{false};
     std::string      self_nickname_;
     std::mutex       nickname_mutex_;
 
