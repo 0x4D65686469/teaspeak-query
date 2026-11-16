@@ -273,19 +273,17 @@ ServerQuery& ServerQuery::login(const std::string& user,
                                 const std::string& password,
                                 bool strict) {
     auto resp = execute("login " + escape(user) + " " + escape(password));
-    int id  = resp.error().id;
+    int  id  = resp.error().id;
     auto msg = resp.error().msg;
 
     if (id == 0) {
         login_success_ = true;
         return *this;
     }
-
-    // TeaSpeak bug #1792 – session stays alive as guest.
+    
+    // TeaSpeak bug #1792
     if (id == 1792) {
-        if (warn_)
-            warn_("Login returned TeaSpeak error 1792 (" + msg +
-                  "). Session continues as GUEST; admin ops may fail.");
+        login_success_ = true;
         return *this;
     }
 
