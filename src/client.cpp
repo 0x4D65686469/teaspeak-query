@@ -375,6 +375,17 @@ bool ServerQuery::logged_in() {
       catch (...)                         { return false; }
 }
 
+bool ServerQuery::is_guest() {
+    if (login_success_ || apikey_success_) return false;
+    try {
+        auto me = whoami();
+        auto it = me.find("client_login_name");
+        return it == me.end() || it->second.empty();
+    } catch (...) {
+        return true;
+    }
+}
+
 int ServerQuery::client_id() const noexcept { return client_id_.load(); }
 int ServerQuery::server_id() const noexcept { return server_id_.load(); }
 
@@ -383,6 +394,11 @@ int ServerQuery::server_id() const noexcept { return server_id_.load(); }
 // ------------------------------------------------------------------ //
 ServerQuery& ServerQuery::register_notify(const std::string& event,
                                           const std::string& specifier) {
+    if (is_guest() && warn_) {
+        warn_("register_notify('" + event + "') called on a GUEST session. "
+              "TeaSpeak accepts the registration but often does not deliver "
+              "events. Log in with apikey() or use admin credentials.");
+    }
     std::string cmd = "servernotifyregister event=" + escape(event);
     if (!specifier.empty()) cmd += " specifier=" + escape(specifier);
     execute(cmd).raise_for_error();

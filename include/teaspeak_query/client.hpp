@@ -47,6 +47,7 @@ public:
     ServerQuery& select_server(int sid);
     ServerQuery& nickname(const std::string& name);
     bool         logged_in();
+    bool         is_guest(); 
     KeyValueMap  whoami();
 
     int  client_id() const noexcept;
