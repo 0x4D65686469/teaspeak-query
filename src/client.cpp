@@ -475,16 +475,11 @@ ServerQuery& ServerQuery::channeledit(int cid, const Params& props) {
     return *this;
 }
 int ServerQuery::channelcreate(const std::string& name, const Params& props) {
-    auto resp = command("channelcreate",
-                        Params().set("channel_name", name)).raise_for_error();
-    if (!props.empty()) {
-        auto d = command("channelcreate",
-                         Params().set("channel_name", name)
-                                 .set_raw("_", "")).as_dict();
-        (void)d;
-    }
-    auto d = resp.as_dict();
-    try { return std::stoi(d.at("cid")); } catch (...) { return 0; }
+    std::string cmd = "channelcreate channel_name=" + escape(name);
+    if (!props.empty()) cmd += " " + props.build();
+    auto resp = execute(cmd).raise_for_error();
+    try { return std::stoi(resp.as_dict().at("cid")); }
+    catch (...) { return 0; }
 }
 ServerQuery& ServerQuery::channeldelete(int cid, bool force) {
     command("channeldelete",
