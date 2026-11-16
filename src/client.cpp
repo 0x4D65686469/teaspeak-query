@@ -54,8 +54,12 @@ ServerQuery& ServerQuery::connect() {
 }
 
 void ServerQuery::disconnect() {
-    if (connected_.exchange(false)) {
-        try { sock_->send_all("quit\n"); } catch (...) {}
+    bool was_connected = connected_.exchange(false);
+    if (was_connected) {
+        std::unique_lock<std::mutex> lk(send_mutex_, std::try_to_lock);
+        if (lk.owns_lock()) {
+            try { sock_->send_all("quit\n"); } catch (...) {}
+        }
     }
     stop_flag_ = true;
 
