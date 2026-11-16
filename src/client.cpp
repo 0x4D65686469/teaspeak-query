@@ -314,7 +314,17 @@ ServerQuery& ServerQuery::select_server(int sid) {
 }
 
 ServerQuery& ServerQuery::nickname(const std::string& name) {
-    execute("clientupdate client_nickname=" + escape(name)).raise_for_error();
+    try {
+        execute("clientupdate client_nickname=" + escape(name))
+            .raise_for_error();
+    } catch (const CommandError& e) {
+        if (e.is_nickname_in_use())
+            throw CommandError(
+                "nickname '" + name + "' is already in use by another "
+                "client (error 513). Choose a different nickname.",
+                e.error());
+        throw;
+    }
     {
         std::lock_guard<std::mutex> lk(nickname_mutex_);
         self_nickname_ = name;
