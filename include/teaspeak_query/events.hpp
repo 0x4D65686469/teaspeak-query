@@ -4,7 +4,7 @@ namespace teaspeak_query {
 namespace events {
 
 // ------------------------------------------------------------------
-// Event table
+// Event table (X-macro)
 //
 // Each row is: (TagName, notify_category, event_name, targetmode_filter)
 //
