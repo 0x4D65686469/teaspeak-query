@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 
     try {
         ServerQuery q(args.host, args.port);
-        q.set_warning_handler([&](const std::string& w) {
+        q.set_warning_handler([](const std::string& w) {
             std::cerr << "[warn] " << w << "\n";
         });
 
@@ -140,12 +140,24 @@ int main(int argc, char** argv) {
             std::cout << "sent message to clid=" << args.target_clid << "\n";
         }
 
-        // Register notifications and handlers.
-        q.register_notify("textprivate");
-        q.on("textmessage", [](const QueryEvent& ev) {
-            std::cout << "[event] " << ev.get("invokername")
+        TQ_ON_TEXTMESSAGE(q, ev) {
+            std::cout << "[pm] " << ev.get("invokername")
                       << " -> " << ev.get("msg") << "\n";
         });
+
+        TQ_ON_CHANNEL_MESSAGE(q, ev) {
+            std::cout << "[ch] " << ev.get("invokername")
+                      << " -> " << ev.get("msg") << "\n";
+        });
+
+        TQ_ON_CLIENTENTERVIEW(q, ev) {
+            std::cout << "[+] " << ev.get("client_nickname") << "\n";
+        });
+
+        TQ_ON_CLIENTLEFTVIEW(q, ev) {
+            std::cout << "[-] " << ev.get("client_nickname") << "\n";
+        });
+
         if (args.verbose) {
             q.on_any([](const QueryEvent& ev) {
                 std::cout << "[any] " << ev.raw_name << "\n";
@@ -156,7 +168,6 @@ int main(int argc, char** argv) {
             std::cout << "Press Enter to quit...\n";
             std::cin.get();
         } else {
-            // Give the server a short window to deliver events.
             std::this_thread::sleep_for(std::chrono::seconds(3));
         }
 
