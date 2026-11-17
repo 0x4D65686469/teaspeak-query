@@ -46,6 +46,11 @@ ServerQuery& ServerQuery::connect() {
     client_id_ = -1;
     connected_ = true;
 
+    {
+        std::lock_guard<std::mutex> lk(registered_mutex_);
+        registered_notifies_.clear();
+    }
+
     _read_greeting();
 
     reader_thread_ = std::thread([this] { _read_loop(); });
@@ -392,19 +397,37 @@ int ServerQuery::server_id() const noexcept { return server_id_.load(); }
 // ------------------------------------------------------------------ //
 ServerQuery& ServerQuery::register_notify(const std::string& event,
                                           const std::string& specifier) {
+    const std::string key = event + "|" + specifier;
+    {
+        std::lock_guard<std::mutex> lk(registered_mutex_);
+        if (registered_notifies_.count(key)) return *this;
+    }
+
     if (is_guest() && warn_) {
         warn_("register_notify('" + event + "') called on a GUEST session. "
               "TeaSpeak accepts the registration but often does not deliver "
               "events. Log in with apikey() or use admin credentials.");
     }
+
     std::string cmd = "servernotifyregister event=" + escape(event);
     if (!specifier.empty()) cmd += " specifier=" + escape(specifier);
     execute(cmd).raise_for_error();
+
+    {
+        std::lock_guard<std::mutex> lk(registered_mutex_);
+        registered_notifies_.insert(key);
+    }
     return *this;
 }
 
 ServerQuery& ServerQuery::unregister_notify(const std::string& event,
                                             const std::string& specifier) {
+    const std::string key = event + "|" + specifier;
+    {
+        std::lock_guard<std::mutex> lk(registered_mutex_);
+        registered_notifies_.erase(key);
+    }
+
     std::string cmd = "servernotifyunregister event=" + escape(event);
     if (!specifier.empty()) cmd += " specifier=" + escape(specifier);
     execute(cmd).raise_for_error();

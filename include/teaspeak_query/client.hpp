@@ -10,6 +10,7 @@
 #include <thread>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "params.hpp"
 #include "types.hpp"
@@ -60,6 +61,16 @@ public:
                                    const std::string& specifier = {});
     ServerQuery& on(const std::string& event_name, EventCallback cb);
     ServerQuery& on_any(EventCallback cb);
+
+    template <typename Tag>
+    ServerQuery& on_event(EventCallback cb) {
+        register_notify(Tag::category);
+        auto filter = Tag::filter;
+        auto handler = [cb = std::move(cb), filter](const QueryEvent& ev) {
+            if (filter == nullptr || ev.get("targetmode") == filter) cb(ev);
+        };
+        return on(Tag::event, std::move(handler));
+    }
 
     std::optional<QueryEvent> poll(int timeout_ms = 500);
     void listen(std::atomic<bool>* stop = nullptr);
@@ -177,6 +188,8 @@ private:
     std::thread reader_thread_;
     std::thread dispatcher_thread_;
 
+    std::set<std::string> registered_notifies_;
+    std::mutex            registered_mutex_;
     std::atomic<int> client_id_{-1};
     std::atomic<int> server_id_{0};
     std::atomic<bool> login_success_{false};
