@@ -7,7 +7,7 @@
 // ------------------------------------------------------------------
 #define TQ_ON(TAG, q, ev) \
     (q).on_event<::teaspeak_query::events::TAG>( \
-        [&](const ::teaspeak_query::QueryEvent& ev)
+        [&](const ::teaspeak_query::events::TAG::Event& ev)
 
 // Text messages - filtered by targetmode automatically
 #define TQ_ON_TEXTMESSAGE(q, ev)  TQ_ON(TextMessagePrivate, q, ev)

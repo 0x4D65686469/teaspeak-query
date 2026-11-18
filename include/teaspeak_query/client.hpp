@@ -63,11 +63,14 @@ public:
     ServerQuery& on_any(EventCallback cb);
 
     template <typename Tag>
-    ServerQuery& on_event(EventCallback cb) {
+    ServerQuery& on_event(std::function<void(const typename Tag::Event&)> cb) {
         register_notify(Tag::category);
         auto filter = Tag::filter;
         auto handler = [cb = std::move(cb), filter](const QueryEvent& ev) {
-            if (filter == nullptr || ev.get("targetmode") == filter) cb(ev);
+            if (filter == nullptr || ev.get("targetmode") == filter) {
+                typename Tag::Event typed(ev);
+                cb(typed);
+            }
         };
         return on(Tag::event, std::move(handler));
     }

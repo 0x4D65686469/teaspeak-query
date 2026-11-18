@@ -141,21 +141,32 @@ int main(int argc, char** argv) {
         }
 
         TQ_ON_TEXTMESSAGE(q, ev) {
-            std::cout << "[pm] " << ev.get("invokername")
-                      << " -> " << ev.get("msg") << "\n";
+            std::cout << "[pm] " << ev.invokername()
+                      << " -> " << ev.msg() << "\n";
         });
 
         TQ_ON_CHANNEL_MESSAGE(q, ev) {
-            std::cout << "[ch] " << ev.get("invokername")
-                      << " -> " << ev.get("msg") << "\n";
+            std::cout << "[ch] " << ev.invokername()
+                      << " -> " << ev.msg() << "\n";
         });
 
         TQ_ON_CLIENTENTERVIEW(q, ev) {
-            std::cout << "[+] " << ev.get("client_nickname") << "\n";
+            std::cout << "[+] " << ev.client_nickname()
+                      << " (clid=" << ev.clid_int()
+                      << ", country=" << ev.client_country() << ")\n";
         });
 
         TQ_ON_CLIENTLEFTVIEW(q, ev) {
-            std::cout << "[-] " << ev.get("client_nickname") << "\n";
+            std::cout << "[-] " << ev.client_nickname()
+                      << " (reason=" << ev.reasonid_int() << ")\n";
+        });
+
+        TQ_ON_CLIENTMOVED(q, ev) {
+            std::cout << "[m] clid " << ev.clid_int()
+                      << " -> cid " << ev.ctid_int();
+            if (!ev.invokername().empty())
+                std::cout << "  (by " << ev.invokername() << ")";
+            std::cout << "\n";
         });
 
         if (args.verbose) {
